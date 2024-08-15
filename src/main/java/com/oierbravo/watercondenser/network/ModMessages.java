@@ -1,49 +1,24 @@
 package com.oierbravo.watercondenser.network;
 
 import com.oierbravo.watercondenser.WaterCondenser;
-import com.oierbravo.watercondenser.network.packets.FluidStackSyncS2CPacket;
-import net.minecraft.resources.ResourceLocation;
-import net.minecraft.server.level.ServerPlayer;
-import net.minecraftforge.network.NetworkDirection;
-import net.minecraftforge.network.NetworkRegistry;
-import net.minecraftforge.network.PacketDistributor;
-import net.minecraftforge.network.simple.SimpleChannel;
+import com.oierbravo.watercondenser.network.packets.data.FluidSyncPayload;
+import com.oierbravo.watercondenser.network.packets.handler.FluidSyncPacket;
+import net.minecraft.network.protocol.common.custom.CustomPacketPayload;
+import net.neoforged.neoforge.network.PacketDistributor;
+import net.neoforged.neoforge.network.event.RegisterPayloadHandlersEvent;
+import net.neoforged.neoforge.network.registration.PayloadRegistrar;
 
 public class ModMessages {
-    private static SimpleChannel INSTANCE;
+    public static void registerNetworking(final RegisterPayloadHandlersEvent event) {
+        final PayloadRegistrar registrar = event.registrar(WaterCondenser.MODID);
 
-    private static int packetId = 0;
-    private static int id() {
-        return packetId++;
+        //Going to Client
+        registrar.playToClient(FluidSyncPayload.TYPE, FluidSyncPayload.STREAM_CODEC, FluidSyncPacket.get()::handle);
+    }
+    public static void sendToAllClients(CustomPacketPayload message) {
+        PacketDistributor.sendToAllPlayers(message);
     }
 
     public static void register() {
-        SimpleChannel net = NetworkRegistry.ChannelBuilder
-                .named(new ResourceLocation(WaterCondenser.MODID, "messages"))
-                .networkProtocolVersion(() -> "1.0")
-                .clientAcceptedVersions(s -> true)
-                .serverAcceptedVersions(s -> true)
-                .simpleChannel();
-
-        INSTANCE = net;
-
-
-        net.messageBuilder(FluidStackSyncS2CPacket.class, id(), NetworkDirection.PLAY_TO_CLIENT)
-                .decoder(FluidStackSyncS2CPacket::new)
-                .encoder(FluidStackSyncS2CPacket::toBytes)
-                .consumerMainThread(FluidStackSyncS2CPacket::handle)
-                .add();
-    }
-
-    public static <MSG> void sendToServer(MSG message) {
-        INSTANCE.sendToServer(message);
-    }
-
-    public static <MSG> void sendToPlayer(MSG message, ServerPlayer player) {
-        INSTANCE.send(PacketDistributor.PLAYER.with(() -> player), message);
-    }
-
-    public static <MSG> void sendToClients(MSG message) {
-        INSTANCE.send(PacketDistributor.ALL.noArg(), message);
     }
 }

@@ -1,19 +1,20 @@
 package com.oierbravo.watercondenser.config;
 
-import net.minecraftforge.common.ForgeConfigSpec;
+
+import net.neoforged.neoforge.common.ModConfigSpec;
 
 public class ModConfigCommon {
-    public static final ForgeConfigSpec.Builder BUILDER = new ForgeConfigSpec.Builder();
-    public static final ForgeConfigSpec SPEC;
+    public static final ModConfigSpec.Builder BUILDER = new ModConfigSpec.Builder();
+    public static final ModConfigSpec SPEC;
 
-    public static final ForgeConfigSpec.ConfigValue<String> CONDENSER_FLUID;
+    public static final ModConfigSpec.ConfigValue<String> CONDENSER_FLUID;
     public static final String CONDENSER_FLUID_DEFAULT = "minecraft:water";
-    public static final ForgeConfigSpec.ConfigValue<Integer> CONDENSER_CAPACITY;
-    public static final ForgeConfigSpec.ConfigValue<Integer> CONDENSER_TICKS_PER_CYCLE;
-    public static final ForgeConfigSpec.ConfigValue<Integer> CONDENSER_MB_PER_CYCLE;
-    public static final ForgeConfigSpec.ConfigValue<Float> CONDENSER_MB_MULTI_MIN;
-    public static final ForgeConfigSpec.ConfigValue<Float> CONDENSER_MB_MULTI_MAX;
-    public static final ForgeConfigSpec.ConfigValue<Integer> CONDENSER_BOTTLE_MB_CONSUMPTION;
+    public static final ModConfigSpec.ConfigValue<Integer> CONDENSER_CAPACITY;
+    public static final ModConfigSpec.ConfigValue<Integer> CONDENSER_TICKS_PER_CYCLE;
+    public static final ModConfigSpec.ConfigValue<Integer> CONDENSER_MB_PER_CYCLE;
+    public static final ModConfigSpec.ConfigValue<Float> CONDENSER_MB_MULTI_MIN;
+    public static final ModConfigSpec.ConfigValue<Float> CONDENSER_MB_MULTI_MAX;
+    public static final ModConfigSpec.ConfigValue<Integer> CONDENSER_BOTTLE_MB_CONSUMPTION;
 
     static {
         BUILDER.push("Configs for WaterCondenser");

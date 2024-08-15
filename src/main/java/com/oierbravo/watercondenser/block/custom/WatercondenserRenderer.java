@@ -13,11 +13,12 @@ import net.minecraft.client.renderer.blockentity.BlockEntityRenderers;
 import net.minecraft.client.renderer.texture.OverlayTexture;
 import net.minecraft.client.renderer.texture.TextureAtlasSprite;
 import net.minecraft.core.BlockPos;
+import net.minecraft.resources.ResourceLocation;
 import net.minecraft.world.inventory.InventoryMenu;
 import net.minecraft.world.level.BlockAndTintGetter;
 import net.minecraft.world.level.material.Fluid;
-import net.minecraftforge.client.extensions.common.IClientFluidTypeExtensions;
-import net.minecraftforge.fluids.FluidStack;
+import net.neoforged.neoforge.client.extensions.common.IClientFluidTypeExtensions;
+import net.neoforged.neoforge.fluids.FluidStack;
 import org.jetbrains.annotations.NotNull;
 import org.joml.Matrix3f;
 import org.joml.Matrix4f;
@@ -40,11 +41,11 @@ public class WatercondenserRenderer implements BlockEntityRenderer<Watercondense
         if (!fluidStack.isEmpty()) {
             int amount = fluidStack.getAmount();
             int total = pBlockEntity.getFluidHandler().getTankCapacity(0);
-            this.renderFluidInTank(pBlockEntity.getLevel(), pBlockEntity.getBlockPos(), fluidStack, pPoseStack, pBufferSource, (amount / (float) total));
+            this.renderFluidInTank(pBlockEntity.getLevel(), pBlockEntity.getBlockPos(), fluidStack, pPoseStack, pBufferSource, (amount / (float) total), pPackedLight, pPackedOverlay);
         }
     }
 
-    private void renderFluidInTank(BlockAndTintGetter world, BlockPos pos, FluidStack fluidStack, PoseStack matrix, MultiBufferSource buffer, float percent) {
+    private void renderFluidInTank(BlockAndTintGetter world, BlockPos pos, FluidStack fluidStack, PoseStack matrix, MultiBufferSource buffer, float percent, int pPackedLight, int pPackedOverlay) {
         matrix.pushPose();
         matrix.translate(0.5d, 0.29d, 0.5d);
 
@@ -53,6 +54,8 @@ public class WatercondenserRenderer implements BlockEntityRenderer<Watercondense
 
         Fluid fluid = fluidStack.getFluid();
         IClientFluidTypeExtensions clientFluid = IClientFluidTypeExtensions.of(fluid);
+
+
         TextureAtlasSprite fluidTexture = Minecraft.getInstance()
                 .getTextureAtlas(InventoryMenu.BLOCK_ATLAS)
                 .apply(clientFluid.getStillTexture(fluidStack));
@@ -60,12 +63,12 @@ public class WatercondenserRenderer implements BlockEntityRenderer<Watercondense
         int color = clientFluid.getTintColor(fluidStack);
 
         VertexConsumer builder = buffer.getBuffer(RenderType.translucent());
-        this.renderTopFluidFace(fluidTexture, matrix4f, matrix3f, builder, color, percent);
+        this.renderTopFluidFace(matrix, fluidTexture, matrix4f, matrix3f, builder, color, percent, pPackedLight, pPackedOverlay);
         matrix.popPose();
 
     }
 
-    private void renderTopFluidFace(TextureAtlasSprite sprite, Matrix4f matrix4f, Matrix3f normalMatrix, VertexConsumer builder, int color, float percent) {
+    private void renderTopFluidFace(PoseStack matrix, TextureAtlasSprite sprite, Matrix4f matrix4f, Matrix3f normalMatrix, VertexConsumer builder, int color, float percent, int pPackedLight, int pPackedOverlay) {
         float r = ((color >> 16) & 0xFF) / 255f;
         float g = ((color >> 8) & 0xFF) / 255f;
         float b = ((color) & 0xFF) / 255f;
@@ -74,32 +77,36 @@ public class WatercondenserRenderer implements BlockEntityRenderer<Watercondense
         float width = 12 / 16f;
         float height = 7 / 16f;
 
-        float minU = sprite.getU(3);
-        float maxU = sprite.getU(13);
-        float minV = sprite.getV(3);
-        float maxV = sprite.getV(13);
+        float minU = sprite.getU(3F / 16F);
+        float maxU = sprite.getU(13F / 16F);
+        float minV = sprite.getV(3F / 16F);
+        float maxV = sprite.getV(13F / 16F);
 
         float pY = -height / 2 + percent * height;
 
-        builder.vertex(matrix4f, -width / 2, pY , -width / 2).color(r, g, b, a)
-                .uv(minU, minV)
-                .overlayCoords(OverlayTexture.NO_OVERLAY).uv2(15728880).normal(normalMatrix, 0, 1, 0)
-                .endVertex();
+        builder.addVertex(matrix4f, -width / 2, pY , -width / 2).setColor(r, g, b, a)
+                .setUv(minU, minV)
+                .setLight(pPackedLight)
+                .setOverlay(pPackedOverlay)
+                .setNormal(0, 1, 0);
 
-        builder.vertex(matrix4f, -width / 2, pY, width / 2).color(r, g, b, a)
-                .uv(minU, maxV)
-                .overlayCoords(OverlayTexture.NO_OVERLAY).uv2(15728880).normal(normalMatrix, 0, 1, 0)
-                .endVertex();
+        builder.addVertex(matrix4f, -width / 2, pY, width / 2).setColor(r, g, b, a)
+                .setUv(minU, maxV)
+                .setLight(pPackedLight)
+                .setOverlay(pPackedOverlay)
+                .setNormal(0, 1, 0);
 
-        builder.vertex(matrix4f, width / 2, pY, width / 2).color(r, g, b, a)
-                .uv(maxU, maxV)
-                .overlayCoords(OverlayTexture.NO_OVERLAY).uv2(15728880).normal(normalMatrix, 0, 1, 0)
-                .endVertex();
+        builder.addVertex(matrix4f, width / 2, pY, width / 2).setColor(r, g, b, a)
+                .setUv(maxU, maxV)
+                .setLight(pPackedLight)
+                .setOverlay(pPackedOverlay)
+                .setNormal(0, 1, 0);
 
-        builder.vertex(matrix4f, width / 2, pY, -width / 2).color(r, g, b, a)
-                .uv(maxU, minV)
-                .overlayCoords(OverlayTexture.NO_OVERLAY).uv2(15728880).normal(normalMatrix, 0, 1, 0)
-                .endVertex();
+        builder.addVertex(matrix4f, width / 2, pY, -width / 2).setColor(r, g, b, a)
+                .setUv(maxU, minV)
+                .setLight(pPackedLight)
+                .setOverlay(pPackedOverlay)
+                .setNormal(0, 1, 0);
     }
 
 }

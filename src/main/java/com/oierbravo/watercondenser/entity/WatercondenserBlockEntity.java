@@ -2,31 +2,25 @@ package com.oierbravo.watercondenser.entity;
 
 import com.oierbravo.watercondenser.config.ModConfigCommon;
 import com.oierbravo.watercondenser.network.ModMessages;
-import com.oierbravo.watercondenser.network.packets.FluidStackSyncS2CPacket;
+import com.oierbravo.watercondenser.network.packets.data.FluidSyncPayload;
 import net.minecraft.core.BlockPos;
-import net.minecraft.core.Direction;
+import net.minecraft.core.HolderLookup;
+import net.minecraft.core.registries.BuiltInRegistries;
 import net.minecraft.nbt.CompoundTag;
+import net.minecraft.network.Connection;
 import net.minecraft.network.protocol.Packet;
 import net.minecraft.network.protocol.game.ClientGamePacketListener;
 import net.minecraft.network.protocol.game.ClientboundBlockEntityDataPacket;
 import net.minecraft.resources.ResourceLocation;
-import net.minecraft.server.level.ServerLevel;
-import net.minecraft.server.level.ServerPlayer;
-import net.minecraft.world.level.ChunkPos;
 import net.minecraft.world.level.Level;
 import net.minecraft.world.level.block.entity.BlockEntity;
 import net.minecraft.world.level.block.state.BlockState;
 import net.minecraft.world.level.material.Fluid;
-import net.minecraftforge.common.capabilities.Capability;
-import net.minecraftforge.common.capabilities.ForgeCapabilities;
-import net.minecraftforge.common.util.LazyOptional;
-import net.minecraftforge.fluids.FluidStack;
-import net.minecraftforge.fluids.capability.IFluidHandler;
-import net.minecraftforge.fluids.capability.IFluidHandler.FluidAction;
-import net.minecraftforge.fluids.capability.templates.FluidTank;
 
-import net.minecraftforge.registries.ForgeRegistries;
-import org.jetbrains.annotations.NotNull;
+import net.neoforged.neoforge.common.util.Lazy;
+import net.neoforged.neoforge.fluids.FluidStack;
+import net.neoforged.neoforge.fluids.capability.IFluidHandler;
+import net.neoforged.neoforge.fluids.capability.templates.FluidTank;
 import org.jetbrains.annotations.Nullable;
 import org.slf4j.Logger;
 
@@ -40,7 +34,6 @@ import java.util.stream.Stream;
  *
  */
 public class WatercondenserBlockEntity extends BlockEntity {
-//public class WatercondenserBlockEntity extends BlockEntity implements IFluidHandler{
     private static final RandomGenerator sharedRandom = new Random();
     private static Fluid fluidOutput = null;
     private static long lastCycleTime = -1;
@@ -48,22 +41,28 @@ public class WatercondenserBlockEntity extends BlockEntity {
     private static boolean resetCycle = false;
     private CompoundTag updateTag;
     private final FluidTank fluidTankHandler = createFluidTank();
-    //private final LazyOptional<IFluidHandler> lazyFluidHandler = LazyOptional.of(() -> fluidTankHandler);
-    private LazyOptional<IFluidHandler> lazyFluidHandler = LazyOptional.empty();
+
+    private Lazy<IFluidHandler> lazyFluidHandler = Lazy.of(() -> fluidTankHandler);
     public WatercondenserBlockEntity(BlockPos pWorldPosition, BlockState pBlockState) {
         super(ModBlockEntities.WATERCONDENSER_ENTITY.get(), pWorldPosition, pBlockState);
         updateTag = getPersistentData();
+    }
+    @Override
+    public void invalidateCapabilities() {
+        super.invalidateCapabilities();
+        lazyFluidHandler.invalidate();
     }
     public static void verifyConfig(final Logger logger) {
         if (fluidOutput == null) {
             // verify and set the configured fluid
             final String fluidResourceRaw = ModConfigCommon.CONDENSER_FLUID.get();
-            final ResourceLocation desiredFluid = new ResourceLocation(fluidResourceRaw);
-            if (ForgeRegistries.FLUIDS.containsKey(desiredFluid)) {
-                fluidOutput = ForgeRegistries.FLUIDS.getValue(desiredFluid);
+            final ResourceLocation desiredFluid = ResourceLocation.parse(fluidResourceRaw);
+
+            if (BuiltInRegistries.FLUID.containsKey(desiredFluid)) {
+                fluidOutput = BuiltInRegistries.FLUID.get(desiredFluid);
             } else {
                 logger.error("Unknown fluid '{}' in config, using default '{}' instead", fluidResourceRaw, ModConfigCommon.CONDENSER_FLUID_DEFAULT);
-                fluidOutput = ForgeRegistries.FLUIDS.getValue(new ResourceLocation(ModConfigCommon.CONDENSER_FLUID_DEFAULT));
+                fluidOutput = BuiltInRegistries.FLUID.get( ResourceLocation.parse(ModConfigCommon.CONDENSER_FLUID_DEFAULT));
             }
         }
     }
@@ -74,21 +73,12 @@ public class WatercondenserBlockEntity extends BlockEntity {
                 setChanged();
                 assert level != null;
                 if(!level.isClientSide()) {
-                    ModMessages.sendToClients(new FluidStackSyncS2CPacket(this.fluid, worldPosition));
+                    ModMessages.sendToAllClients(new FluidSyncPayload(getFluidStack(), worldPosition));
                 }
             }
-
         };
     }
 
-    @Override
-    public <T> LazyOptional<T> getCapability(@NotNull Capability<T> cap, @Nullable Direction side) {
-        if (cap == ForgeCapabilities.FLUID_HANDLER) {
-            return lazyFluidHandler.cast();
-        } else {
-            return super.getCapability(cap, side);
-        }
-    }
     public FluidStack getFluidStack() {
 
         if (!fluidTankHandler.isEmpty()) {
@@ -99,32 +89,15 @@ public class WatercondenserBlockEntity extends BlockEntity {
     }
 
     @Override
-    public void onLoad() {
-        super.onLoad();
-        lazyFluidHandler = LazyOptional.of(() -> fluidTankHandler);
-    }
-
-
-    @Override
-    public void invalidateCaps()  {
-        super.invalidateCaps();
-        lazyFluidHandler.invalidate();
-    }
-
-
-    @Override
-    protected void saveAdditional(CompoundTag nbt) {
-        fluidTankHandler.writeToNBT(nbt);
-        //nbt.putInt("fluid", fluidTankHandler.getCapacity());
-        //updateTag = nbt;
-        super.saveAdditional(nbt);
+    protected void saveAdditional(CompoundTag tag, HolderLookup.Provider registries) {
+        super.saveAdditional(tag, registries);
+        fluidTankHandler.writeToNBT(registries, tag);
     }
 
     @Override
-    public void load(CompoundTag nbt) {
-        super.load(nbt);
-        fluidTankHandler.readFromNBT(nbt);
-        //fluidTankHandler.setCapacity(nbt.getInt("fluid"));
+    protected void loadAdditional(CompoundTag tag, HolderLookup.Provider registries) {
+        super.loadAdditional(tag, registries);
+        fluidTankHandler.readFromNBT(registries, tag);
 
         if (!fluidTankHandler.getFluid().getFluid().isSame(fluidOutput)) {
             // fluid in config differs from saved NBT, override it
@@ -133,9 +106,8 @@ public class WatercondenserBlockEntity extends BlockEntity {
         }
     }
 
-
-    public static void tick(Level pLevel, BlockPos pPos, BlockState pState, WatercondenserBlockEntity pBlockEntity) {
-
+    public static <T extends BlockEntity> void tick(Level pLevel, BlockPos pPos, BlockState pState, T pBlockEntity) {
+        WatercondenserBlockEntity blockEntity = (WatercondenserBlockEntity) pBlockEntity;
         if(pLevel.isClientSide()) {
             return;
         }
@@ -162,25 +134,26 @@ public class WatercondenserBlockEntity extends BlockEntity {
                 amount = Math.round(ModConfigCommon.CONDENSER_MB_PER_CYCLE.get() * randomMultiplier);
             }
 
-            pBlockEntity.fluidTankHandler.fill( new FluidStack(fluidOutput, amount), FluidAction.EXECUTE);
+            blockEntity.fluidTankHandler.fill( new FluidStack(fluidOutput, amount), IFluidHandler.FluidAction.EXECUTE);
         }
     }
     public IFluidHandler getFluidHandler() {
         return this.fluidTankHandler;
     }
 
-    @Nullable
     @Override
-    public ClientboundBlockEntityDataPacket getUpdatePacket() {
+    public CompoundTag getUpdateTag(HolderLookup.Provider registries) {
+        return saveWithoutMetadata(registries);
+    }
+
+    @Override
+    public Packet<ClientGamePacketListener> getUpdatePacket() {
         return ClientboundBlockEntityDataPacket.create(this);
     }
 
-    @Override
-    public void handleUpdateTag(CompoundTag tag) {
-        this.load(tag);
-    }
 
     public void setFluid(FluidStack fluidStack) {
+
         this.fluidTankHandler.setFluid(fluidStack);
     }
 
@@ -189,7 +162,9 @@ public class WatercondenserBlockEntity extends BlockEntity {
         if( consumption > fluidTankHandler.getFluidAmount()){
             return false;
         }
-        fluidTankHandler.drain(consumption,FluidAction.EXECUTE);
+        fluidTankHandler.drain(consumption, IFluidHandler.FluidAction.EXECUTE);
         return true;
     }
+
+
 }

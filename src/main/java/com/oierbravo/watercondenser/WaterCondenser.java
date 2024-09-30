@@ -2,25 +2,19 @@ package com.oierbravo.watercondenser;
 
 import com.mojang.logging.LogUtils;
 import com.oierbravo.watercondenser.block.ModBlocks;
-import com.oierbravo.watercondenser.config.ModConfigCommon;
+import com.oierbravo.watercondenser.config.ModConfigs;
 import com.oierbravo.watercondenser.entity.ModBlockEntities;
-import com.oierbravo.watercondenser.entity.WatercondenserBlockEntity;
 import com.oierbravo.watercondenser.item.ModItems;
 import com.oierbravo.watercondenser.network.ModMessages;
 import net.minecraft.world.item.CreativeModeTabs;
 import net.neoforged.api.distmarker.Dist;
 import net.neoforged.bus.api.IEventBus;
-import net.neoforged.bus.api.SubscribeEvent;
 import net.neoforged.fml.ModContainer;
 import net.neoforged.fml.common.Mod;
-import net.neoforged.fml.config.ModConfig;
 import net.neoforged.fml.loading.FMLEnvironment;
 import net.neoforged.neoforge.capabilities.Capabilities;
 import net.neoforged.neoforge.capabilities.RegisterCapabilitiesEvent;
-import net.neoforged.neoforge.common.NeoForge;
 import net.neoforged.neoforge.event.BuildCreativeModeTabContentsEvent;
-import net.neoforged.neoforge.event.server.ServerAboutToStartEvent;
-import net.neoforged.neoforge.fluids.capability.templates.FluidTank;
 import org.slf4j.Logger;
 
 @Mod(WaterCondenser.MODID)
@@ -34,6 +28,7 @@ public class WaterCondenser
     {
         // Register the commonSetup method for modloading
         //modEventBus.addListener(this::commonSetup);
+        ModConfigs.register(modContainer);
 
         ModBlocks.register(modEventBus);
         ModItems.register(modEventBus);
@@ -41,13 +36,13 @@ public class WaterCondenser
         ModMessages.register();
 
 
-        NeoForge.EVENT_BUS.register(this);
+        //NeoForge.EVENT_BUS.register(this);
 
         modEventBus.addListener(this::registerCapabilities);
         modEventBus.addListener(this::addCreative);
         modEventBus.addListener(ModMessages::registerNetworking);
 
-        modContainer.registerConfig(ModConfig.Type.COMMON, ModConfigCommon.SPEC, "watercondenser-common.toml");
+        //modContainer.registerConfig(ModConfig.Type.COMMON, ModConfigCommon.SPEC, "watercondenser-common.toml");
 
         if (FMLEnvironment.dist == Dist.CLIENT)
             modEventBus.addListener(ClientModEvents::registerEntityRenderers);
@@ -79,24 +74,8 @@ public class WaterCondenser
         }
     }
 
-    @SubscribeEvent
+   /* @SubscribeEvent
     public void onServerAboutToStart(final ServerAboutToStartEvent event) {
         WatercondenserBlockEntity.verifyConfig(LOGGER);
-    }
-    //@SubscribeEvent
-    //public void onBottleClick(PlayerInteractEvent.RightClickItem e) {
-    //    Player player = e.getEntity();
-    //    Level world = e.getLevel();
-    //    InteractionHand hand = e.getHand();
-
-    //    ItemStack stack = player.getItemInHand(hand);
-    //    Potion waterPotion = Potion.byName(Potions.WATER.toString());
-        //player.getInventory().placeItemBackInInventory(new ItemStack(waterPotion));
-        //player.getInventory().placeItemBackInInventory(meshInv.getStackInSlot(0));
-
-
-        //if (BottleEvent.onBottleClick(e.getEntity(), e.getLevel(), e.getHand()).getResult().equals(InteractionResult.FAIL)) {
-        //    e.setCanceled(true);
-        //}
-   // }
+    }*/
 }

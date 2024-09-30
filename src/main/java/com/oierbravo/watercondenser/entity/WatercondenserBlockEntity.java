@@ -1,6 +1,6 @@
 package com.oierbravo.watercondenser.entity;
 
-import com.oierbravo.watercondenser.config.ModConfigCommon;
+import com.oierbravo.watercondenser.config.WaterCondenserConfig;
 import com.oierbravo.watercondenser.network.ModMessages;
 import com.oierbravo.watercondenser.network.packets.data.FluidSyncPayload;
 import net.minecraft.core.BlockPos;
@@ -46,28 +46,16 @@ public class WatercondenserBlockEntity extends BlockEntity {
     public WatercondenserBlockEntity(BlockPos pWorldPosition, BlockState pBlockState) {
         super(ModBlockEntities.WATERCONDENSER_ENTITY.get(), pWorldPosition, pBlockState);
         updateTag = getPersistentData();
+        fluidOutput = BuiltInRegistries.FLUID.get( ResourceLocation.parse(WaterCondenserConfig.CONDENSER_FLUID.get()));
     }
     @Override
     public void invalidateCapabilities() {
         super.invalidateCapabilities();
         lazyFluidHandler.invalidate();
     }
-    public static void verifyConfig(final Logger logger) {
-        if (fluidOutput == null) {
-            // verify and set the configured fluid
-            final String fluidResourceRaw = ModConfigCommon.CONDENSER_FLUID.get();
-            final ResourceLocation desiredFluid = ResourceLocation.parse(fluidResourceRaw);
 
-            if (BuiltInRegistries.FLUID.containsKey(desiredFluid)) {
-                fluidOutput = BuiltInRegistries.FLUID.get(desiredFluid);
-            } else {
-                logger.error("Unknown fluid '{}' in config, using default '{}' instead", fluidResourceRaw, ModConfigCommon.CONDENSER_FLUID_DEFAULT);
-                fluidOutput = BuiltInRegistries.FLUID.get( ResourceLocation.parse(ModConfigCommon.CONDENSER_FLUID_DEFAULT));
-            }
-        }
-    }
     private FluidTank createFluidTank() {
-        return new FluidTank(ModConfigCommon.CONDENSER_CAPACITY.get(), ((FluidStack fluid) -> fluid.getFluid().isSame(fluidOutput))) {
+        return new FluidTank(WaterCondenserConfig.CONDENSER_CAPACITY.get(), ((FluidStack fluid) -> fluid.getFluid().isSame(fluidOutput))) {
             @Override
             protected void onContentsChanged() {
                 setChanged();
@@ -124,14 +112,14 @@ public class WatercondenserBlockEntity extends BlockEntity {
             cycleCounter++;
         }
 
-        if (cycleCounter >= ModConfigCommon.CONDENSER_TICKS_PER_CYCLE.get()) {
+        if (cycleCounter >= WaterCondenserConfig.CONDENSER_TICKS_PER_CYCLE.get()) {
             resetCycle = true;
 
-            final float amountMultiMin = ModConfigCommon.CONDENSER_MB_MULTI_MIN.get();
-            int amount = ModConfigCommon.CONDENSER_MB_PER_CYCLE.get();
+            final float amountMultiMin = WaterCondenserConfig.CONDENSER_MB_MULTI_MIN.get();
+            int amount = WaterCondenserConfig.CONDENSER_MB_PER_CYCLE.get();
             if (amountMultiMin < 1.0f) {
-                final float randomMultiplier = amountMultiMin + (sharedRandom.nextFloat() * (ModConfigCommon.CONDENSER_MB_MULTI_MAX.get() - amountMultiMin));
-                amount = Math.round(ModConfigCommon.CONDENSER_MB_PER_CYCLE.get() * randomMultiplier);
+                final float randomMultiplier = amountMultiMin + (sharedRandom.nextFloat() * (WaterCondenserConfig.CONDENSER_MB_MULTI_MAX.get() - amountMultiMin));
+                amount = Math.round(WaterCondenserConfig.CONDENSER_MB_PER_CYCLE.get() * randomMultiplier);
             }
 
             blockEntity.fluidTankHandler.fill( new FluidStack(fluidOutput, amount), IFluidHandler.FluidAction.EXECUTE);
@@ -158,7 +146,7 @@ public class WatercondenserBlockEntity extends BlockEntity {
     }
 
     public boolean consumeWaterBottle() {
-        int consumption = ModConfigCommon.CONDENSER_BOTTLE_MB_CONSUMPTION.get();
+        int consumption = WaterCondenserConfig.CONDENSER_BOTTLE_MB_CONSUMPTION.get();
         if( consumption > fluidTankHandler.getFluidAmount()){
             return false;
         }
@@ -166,5 +154,8 @@ public class WatercondenserBlockEntity extends BlockEntity {
         return true;
     }
 
+    public int getProgressPercent() {
+        return cycleCounter * 100 / WaterCondenserConfig.CONDENSER_TICKS_PER_CYCLE.get();
+    }
 
 }

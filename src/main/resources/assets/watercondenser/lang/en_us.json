@@ -1,3 +1,6 @@
 {
-  "block.watercondenser.watercondenser": "Water Condenser"
+  "block.watercondenser.watercondenser": "Water Condenser",
+  "watercondenser.recipe": "%s production",
+  "watercondenser.recipe.amount_each_tick": "%smB each %s tick",
+  "watercondenser.recipe.amount_each_tick.plural": "%smB each %s ticks"
 }

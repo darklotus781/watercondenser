@@ -1,5 +1,6 @@
 {
   "type": "minecraft:crafting_shaped",
+  "category": "misc",
   "pattern": [
     "SAS",
     " L ",
@@ -20,6 +21,7 @@
     }
   },
   "result": {
-    "item": "watercondenser:watercondenser"
+    "id": "watercondenser:watercondenser",
+    "count": 1
   }
 }

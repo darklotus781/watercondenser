@@ -138,20 +138,23 @@ public class WatercondenserBlockEntity extends BlockEntity {
             resetCycle = true;
 
             final float amountMultiMin = WaterCondenserConfig.mbMultiplierMin;
+            final float amountMultiMax = WaterCondenserConfig.mbMultiplierMax;
             int amount = WaterCondenserConfig.mbPerCycle;
 
             // Apply rain multiplier if raining directly above
             if (pLevel.isRainingAt(pPos.above())) {
                 amount = (int) Math.round(amount * WaterCondenserConfig.rainMultiplier);
+            } else if (amountMultiMin < 1.0f || amountMultiMax > 1.0f) {
+                // Apply random variance only when not raining
+                final float randomMultiplier = amountMultiMin +
+                        (sharedRandom.nextFloat() * (amountMultiMax - amountMultiMin));
+                amount = Math.round(amount * randomMultiplier);
             }
 
-            if (amountMultiMin < 1.0f) {
-                final float randomMultiplier = amountMultiMin + (sharedRandom.nextFloat() * (WaterCondenserConfig.mbMultiplierMax - amountMultiMin));
-                amount = Math.round(WaterCondenserConfig.mbPerCycle * randomMultiplier);
-            }
-
-            blockEntity.fluidTankHandler.fill( new FluidStack(fluidOutput, amount), IFluidHandler.FluidAction.EXECUTE);
+            blockEntity.fluidTankHandler.fill(new FluidStack(fluidOutput, amount), IFluidHandler.FluidAction.EXECUTE);
         }
+
+
 
     }
     public IFluidHandler getFluidHandler() {

@@ -42,6 +42,10 @@ public class WaterCondenserConfig {
         CONDENSER_BOTTLE_MB_CONSUMPTION = BUILDER.comment("Bottle consumption per bottle, in mB")
                 .defineInRange("Fluid amount in mB", 250, 1, Integer.MAX_VALUE);
 
+        CONDENSER_RAIN_MULTIPLIER = BUILDER.comment("Multiplier for condensation rate during rain. Default = 3.0 (3x faster)")
+                .define("Rain multiplier", 3.0);
+
+
         BUILDER.pop();
     }
 
@@ -53,6 +57,7 @@ public class WaterCondenserConfig {
     public static ModConfigSpec.DoubleValue CONDENSER_MB_MULTI_MIN;
     public static ModConfigSpec.DoubleValue CONDENSER_MB_MULTI_MAX;
     public static ModConfigSpec.IntValue CONDENSER_BOTTLE_MB_CONSUMPTION;
+    public static ModConfigSpec.ConfigValue<Double> CONDENSER_RAIN_MULTIPLIER;
 
     // === BUILD SPEC ===
     public static final ModConfigSpec SPEC = BUILDER.build();
@@ -65,6 +70,7 @@ public class WaterCondenserConfig {
     public static float mbMultiplierMin = 0.0f;
     public static float mbMultiplierMax = 1.0f;
     public static int bottleConsumption = 250;
+    public static double rainMultiplier = 3.0;
 
     // === VALIDATION ===
     private static boolean validateFluidName(final Object obj) {
@@ -82,5 +88,6 @@ public class WaterCondenserConfig {
         mbMultiplierMin = CONDENSER_MB_MULTI_MIN.get().floatValue();
         mbMultiplierMax = CONDENSER_MB_MULTI_MAX.get().floatValue();
         bottleConsumption = CONDENSER_BOTTLE_MB_CONSUMPTION.get();
+        rainMultiplier = CONDENSER_RAIN_MULTIPLIER.get();
     }
 }
